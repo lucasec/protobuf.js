@@ -583,6 +583,19 @@ function buildType(ref, type) {
         --indent;
         push("};");
     }
+
+    if (config.inspect) {
+        push("");
+        pushComment([
+            "Creates a simplified object from " + aOrAn(type.name) + " message suitable for passing to a logging framework, printing to console, etc. Types are converted where suitable for readability and to limit overall output size.",
+            "@function inspect",
+            "@memberof " + exportName(type),
+            "@static",
+            "@param {" + exportName(type) + "} " + (config.beautify ? "message" : "m") + " " + type.name,
+            "@returns {Object.<string,*>} Plain object"
+        ]);
+        buildFunction(type, "inspect", protobuf.converter.inspect(type));
+    }
 }
 
 function buildService(ref, service) {
@@ -689,10 +702,14 @@ function buildEnum(ref, enm) {
         Object.keys(enm.values).forEach(function(key) {
             var valueId = enm.values[key];
             var val = config.forceEnumString ? JSON.stringify(key) : valueId;
-            if (aliased.indexOf(valueId) > -1)
-                push("values[" + JSON.stringify(key) + "] = " + val + ";");
-            else {
-                push("values[valuesById[" + valueId + "] = " + JSON.stringify(key) + "] = " + val + ";");
+            if (aliased.indexOf(valueId) > -1) {
+                if (!config.onewayEnums)
+                    push("values[" + JSON.stringify(key) + "] = " + val + ";");
+            } else {
+                if (!config.onewayEnums)
+                    push("values[valuesById[" + valueId + "] = " + JSON.stringify(key) + "] = " + val + ";");
+                else
+                    push("values[" + JSON.stringify(key) + "] = " + val);
                 aliased.push(valueId);
             }
         });
